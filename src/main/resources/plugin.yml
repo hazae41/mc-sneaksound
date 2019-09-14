@@ -1,0 +1,16 @@
+name: SneakSound
+version: @version@
+main: hazae41.minecraft.sneaksound.Plugin
+author: hazae41
+
+commands:
+  sneaksound:
+    aliases: [sneak, farts]
+    description: hazae41's SneakSound
+    usage: "/<command>"
+
+permissions:
+  sneaksound.*:
+    children:
+      sneaksound.use: true
+      sneaksound.send: true
