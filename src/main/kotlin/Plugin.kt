@@ -6,6 +6,7 @@ import hazae41.minecraft.kotlin.bukkit.command
 import hazae41.minecraft.kotlin.bukkit.init
 import hazae41.minecraft.kotlin.bukkit.listen
 import hazae41.minecraft.kotlin.bukkit.severe
+import hazae41.minecraft.kotlin.bukkit.update
 import hazae41.minecraft.kotlin.catch
 import network.aeternum.bananapuncher714.localresourcepackhoster.LocalResourcePackHoster
 import network.aeternum.bananapuncher714.localresourcepackhoster.resoucepack.SoundPackWrapper
@@ -23,6 +24,7 @@ object Config : PluginConfigFile("config"){
 class Plugin : BukkitPlugin(){
     override fun onEnable() {
         catch<Exception>(::severe){
+            update(16004)
             init(Config)
 
             val sounds = Config.sounds
