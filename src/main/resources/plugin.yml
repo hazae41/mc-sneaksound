@@ -10,7 +10,22 @@ commands:
     usage: "/<command>"
 
 permissions:
-  sneaksound.*:
+  sneaksound.player:
+    default: notop
     children:
       sneaksound.use: true
       sneaksound.send: true
+      sneaksound.toggle: true
+      sneaksound.set: true
+      sneaksound.help: true
+  sneaksound.admin:
+    default: op
+    children:
+      sneaksound.send.other: true
+      sneaksound.toggle.other: true
+      sneaksound.set.other: true
+  sneaksound.*:
+    default: op
+    children:
+      sneaksound.player: true
+      sneaksound.admin: true
