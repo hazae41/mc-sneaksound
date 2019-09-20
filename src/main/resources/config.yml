@@ -1,2 +1,5 @@
 volume: 1.0
 pitch: 1.0
+efficiency: 100
+send-on-join: false
+send-on-sneak: true

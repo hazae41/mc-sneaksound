@@ -3,28 +3,35 @@ package hazae41.minecraft.sneaksound
 import hazae41.minecraft.kotlin.bukkit.BukkitPlugin
 import hazae41.minecraft.kotlin.bukkit.ConfigSection
 import hazae41.minecraft.kotlin.bukkit.PluginConfigFile
-import hazae41.minecraft.kotlin.bukkit.command
 import hazae41.minecraft.kotlin.bukkit.init
 import hazae41.minecraft.kotlin.bukkit.listen
 import hazae41.minecraft.kotlin.bukkit.msg
+import hazae41.minecraft.kotlin.bukkit.schedule
 import hazae41.minecraft.kotlin.bukkit.severe
 import hazae41.minecraft.kotlin.bukkit.update
+import hazae41.minecraft.kotlin.bukkit.warning
 import hazae41.minecraft.kotlin.catch
-import hazae41.minecraft.kotlin.ex
 import hazae41.minecraft.kotlin.get
 import network.aeternum.bananapuncher714.localresourcepackhoster.LocalResourcePackHoster
 import network.aeternum.bananapuncher714.localresourcepackhoster.resoucepack.SoundPackWrapper
 import network.aeternum.bananapuncher714.localresourcepackhoster.resoucepack.SoundPackWrapper.SoundResource
 import org.bukkit.Location
 import org.bukkit.SoundCategory.PLAYERS
-import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
+import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerToggleSneakEvent
 import java.io.File
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 object Config : PluginConfigFile("config") {
+    val sendOnJoin by boolean("send-on-join")
+    val sendOnSneak by boolean("send-on-sneak")
     val pitch by double("pitch")
     val volume by double("volume")
+    val efficiency by int("efficiency")
 }
 
 val Player.config: Players.Data
@@ -47,13 +54,24 @@ class Plugin : BukkitPlugin() {
     lateinit var lrph: LocalResourcePackHoster
     lateinit var sounds: List<File>
 
+    fun Player.sendPack() {
+        if (!config.enabled) return
+        lrph.sendResourcePack(this, "sneak")
+        msg(Locale.received)
+    }
+
     override fun onEnable() {
         catch<Exception>(::severe) {
             update(16004)
-            init(Config, Players)
+            init(Config, Players, Locale)
 
             lrph = getPlugin(LocalResourcePackHoster::class.java)
-            sounds = dataFolder.listFiles()!!.filter { "ogg" in it.extension }
+
+            sounds = dataFolder["sounds"].listFiles()
+                ?.filter { "ogg" in it.extension }.orEmpty()
+
+            sounds.takeIf { it.any() }
+                ?: warning(Locale.noSounds)
 
             makePack()
             makeCommands()
@@ -69,10 +87,12 @@ val File.soundName
         .replace(" ", "-")
 
 fun Plugin.makePack() {
-    val pack = dataFolder["tmp"]["pack.zip"]
-    if (pack.exists()) pack.delete()
-    lrph.resourcePacks["sneak"] = pack
-    SoundPackWrapper(pack).apply {
+    val default = dataFolder["packs"]["default.zip"]
+    val tmp = dataFolder["packs"]["tmp.zip"]
+    if (tmp.exists()) tmp.delete()
+    if (default.exists()) default.copyTo(tmp)
+    lrph.resourcePacks["sneak"] = tmp
+    SoundPackWrapper(tmp).apply {
         sounds.forEach {
             val sound = SoundResource("custom.sneak.${it.soundName}", it, true)
             addSound(sound, "custom", false)
@@ -91,123 +111,34 @@ fun Location.playSound(name: String) {
     )
 }
 
-fun Plugin.makeListeners() = listen<PlayerToggleSneakEvent> {
-    if (!it.isSneaking) return@listen
-    if (!it.player.hasPermission("sneaksound.use")) return@listen
-    val names = sounds.map { it.soundName }
-    val config = it.player.config
-    val sound = config.sound.takeIf { it in names } ?: names.random()
-    it.player.location.playSound(sound)
-}
-
-fun Plugin.makeCommands() = command("sneaksound") { args ->
-
-    fun CommandSender.require(perm: String) {
-        if (!hasPermission("sneaksound.$perm"))
-            throw ex("&cYou don't have permission")
+fun Plugin.makeListeners() {
+    listen<PlayerJoinEvent> {
+        if (Config.sendOnJoin)
+            schedule(delay = 2, unit = TimeUnit.SECONDS) {
+                it.player.sendPack()
+            }
     }
 
-    fun String.getPlayer() =
-        server.matchPlayer(this).getOrNull(0)
-            ?: throw ex("&cUnknown player: $name")
+    val receiveds = mutableListOf<UUID>()
+    fun Player.sendPackOnce() {
+        if (uniqueId in receiveds) return
+        receiveds.add(uniqueId)
+        sendPack()
+    }
 
-    val notPlayer = ex("&cYou're not a player")
+    listen<PlayerQuitEvent> {
+        val uuid = it.player.uniqueId
+        if (uuid in receiveds) receiveds.remove(uuid)
+    }
 
-    catch<Exception>(::msg) {
-        when (args.getOrNull(0)) {
-            "unset" -> {
-                when (val target = args.getOrNull(2)) {
-                    null -> {
-                        require("set")
-                        val player = this as? Player ?: throw notPlayer
-                        player.config.sound = ""
-                        msg("&bUnset sneak sound")
-                    }
-                    else -> {
-                        require("set.other")
-                        val player = target.getPlayer()
-                        player.config.sound = ""
-                        msg("&bUnset sneak sound of ${player.name}")
-                    }
-                }
-            }
-            "set" -> {
-                val sound = args.getOrNull(1)?.toLowerCase()
-                    ?: throw ex("/sneaksound set <sound> [player]")
-
-                when (val target = args.getOrNull(2)) {
-                    null -> {
-                        require("set")
-                        val player = this as? Player ?: throw notPlayer
-                        if (sound !in sounds.map { it.soundName })
-                            throw ex("&cThis sound doesn't exists")
-                        player.config.sound = sound
-                        msg("&bSet sneak sound to $sound")
-                    }
-                    else -> {
-                        require("set.other")
-                        val player = target.getPlayer()
-                        if (sound !in sounds.map { it.soundName })
-                            throw ex("&cThis sound doesn't exists")
-                        player.config.sound = sound
-                        msg("&bSet sneak sound of ${player.name} to $sound")
-                    }
-                }
-            }
-            "toggle" -> {
-                when (val target = args.getOrNull(1)) {
-                    null -> {
-                        require("toggle")
-                        val player = this as? Player ?: throw notPlayer
-                        val config = player.config
-                        config.enabled = !config.enabled
-                        when (config.enabled) {
-                            true -> msg("&bEnabled sneak sounds")
-                            false -> msg("&bDisabled sneak sounds")
-                        }
-                    }
-                    else -> {
-                        require("toggle.other")
-                        val player = target.getPlayer()
-                        val config = player.config
-                        config.enabled = !config.enabled
-                        when (config.enabled) {
-                            true -> msg("&bEnabled sneak sounds for ${player.name}")
-                            false -> msg("&bDisabled sneak sounds for ${player.name}")
-                        }
-                    }
-                }
-            }
-            "send" -> {
-                when (val target = args.getOrNull(1)) {
-                    null -> {
-                        require("send")
-                        val player = this as? Player ?: throw notPlayer
-                        val config = player.config
-                        if (!config.enabled) throw ex("&cSneak sounds are not enabled")
-                        lrph.sendResourcePack(player, "sneak")
-                        msg("&bReceived resource pack")
-                    }
-                    else -> {
-                        require("send.other")
-                        val player = target.getPlayer()
-                        val config = player.config
-                        if (!config.enabled) throw ex("&cSneak sounds are not enabled for ${player.name}")
-                        lrph.sendResourcePack(player, "sneak")
-                        msg("&bSent resource pack to ${player.name}")
-                    }
-                }
-            }
-            else -> {
-                require("help")
-                msg("&b~ hazae41's SneakSound ${description.version} ~")
-                msg("&bCommands:")
-                msg("&b- Toggle sounds: /sneaksound toggle [player]")
-                msg("&b- Send pack: /sneaksound send [player]")
-                msg("&b- Set sound: /sneaksound set <sound> [player]")
-                msg("&b- Unset sound: /sneaksound unset [player]")
-                msg("&b~ the end ~")
-            }
-        }
+    listen<PlayerToggleSneakEvent> {
+        if (!it.isSneaking) return@listen
+        if (Config.sendOnSneak) it.player.sendPackOnce()
+        if (!it.player.hasPermission("sneaksound.use")) return@listen
+        if (Random.nextInt(100) > Config.efficiency) return@listen
+        val names = sounds.map { it.soundName }
+        val config = it.player.config
+        val sound = config.sound.takeIf { it in names } ?: names.random()
+        it.player.location.playSound(sound)
     }
 }

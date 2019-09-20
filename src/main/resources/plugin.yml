@@ -11,7 +11,7 @@ commands:
 
 permissions:
   sneaksound.player:
-    default: notop
+    default: true
     children:
       sneaksound.use: true
       sneaksound.send: true
@@ -21,11 +21,14 @@ permissions:
   sneaksound.admin:
     default: op
     children:
+      sneaksound.about: true
       sneaksound.send.other: true
+      sneaksound.send.all: true
+      sneaksound.list: true
+      sneaksound.remake: true
       sneaksound.toggle.other: true
       sneaksound.set.other: true
   sneaksound.*:
-    default: op
     children:
       sneaksound.player: true
       sneaksound.admin: true
