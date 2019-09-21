@@ -37,8 +37,6 @@ object Locale : PluginConfigFile("locale") {
     val disabledOther by string("disabled-other")
     fun disabledOther(player: Player) = disabledOther.replace("%name%", player.name)
 
-    val notEnabledSelf by string("not-enabled-self")
-
     val sentAll by string("sent-all")
     val sentOther by string("sent-other")
     fun sentOther(player: Player) = sentOther.replace("%name%", player.name)

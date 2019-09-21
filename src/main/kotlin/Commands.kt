@@ -100,16 +100,11 @@ fun Plugin.makeCommands() = command("sneaksound") { args ->
                 require("send")
                 when (val target = args.getOrNull(1)) {
                     null -> {
-                        val player = getPlayer()
-                        if (!player.config.enabled)
-                            throw ex(Locale.notEnabledSelf)
-                        player.sendPack()
+                        getPlayer().sendPack()
                     }
                     "all" -> {
                         require("send.all")
-                        server.onlinePlayers.forEach {
-                            if (it.config.enabled) it.sendPack()
-                        }
+                        server.onlinePlayers.forEach { it.sendPack() }
                         msg(Locale.sentAll)
                     }
                     else -> {

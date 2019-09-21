@@ -53,11 +53,16 @@ class Plugin : BukkitPlugin() {
 
     lateinit var lrph: LocalResourcePackHoster
     lateinit var sounds: List<File>
+    val receiveds = mutableListOf<UUID>()
 
     fun Player.sendPack() {
-        if (!config.enabled) return
         lrph.sendResourcePack(this, "sneak")
+        receiveds.add(uniqueId)
         msg(Locale.received)
+    }
+
+    fun Player.sendPackOnce() {
+        if (uniqueId !in receiveds) sendPack()
     }
 
     override fun onEnable() {
@@ -119,13 +124,6 @@ fun Plugin.makeListeners() {
             }
     }
 
-    val receiveds = mutableListOf<UUID>()
-    fun Player.sendPackOnce() {
-        if (uniqueId in receiveds) return
-        receiveds.add(uniqueId)
-        sendPack()
-    }
-
     listen<PlayerQuitEvent> {
         val uuid = it.player.uniqueId
         if (uuid in receiveds) receiveds.remove(uuid)
@@ -134,10 +132,14 @@ fun Plugin.makeListeners() {
     listen<PlayerToggleSneakEvent> {
         if (!it.isSneaking) return@listen
         if (Config.sendOnSneak) it.player.sendPackOnce()
+
+        val config = it.player.config
+        if (!config.enabled) return@listen
+
         if (!it.player.hasPermission("sneaksound.use")) return@listen
         if (Random.nextInt(100) > Config.efficiency) return@listen
+
         val names = sounds.map { it.soundName }
-        val config = it.player.config
         val sound = config.sound.takeIf { it in names } ?: names.random()
         it.player.location.playSound(sound)
     }
