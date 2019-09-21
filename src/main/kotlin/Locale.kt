@@ -42,4 +42,22 @@ object Locale : PluginConfigFile("locale") {
     val sentAll by string("sent-all")
     val sentOther by string("sent-other")
     fun sentOther(player: Player) = sentOther.replace("%name%", player.name)
+
+    val cmdListTitle by string("cmd-list-title")
+    val cmdEnd by string("cmd-end")
+    val cmdTitle by string("cmd-title")
+
+    val statusSound by string("status-sound")
+    fun statusSound(sound: String) = statusSound.replace("%sound%", sound)
+
+    val statusEnabled by string("status-enabled")
+    val statusDisabled by string("status-disabled")
+
+    val cmdCommands by string("cmd-commands")
+    val cmdList by string("cmd-list")
+    val cmdToggle by string("cmd-toggle")
+    val cmdSend by string("cmd-send")
+    val cmdSet by string("cmd-set")
+    val cmdUnset by string("cmd-unset")
+    val cmdRemake by string("cmd-remake")
 }

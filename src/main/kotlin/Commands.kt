@@ -26,9 +26,9 @@ fun Plugin.makeCommands() = command("sneaksound") { args ->
         when (args.getOrNull(0)) {
             "list" -> {
                 require("list")
-                msg("&b~ Sounds list ~")
+                msg(Locale.cmdListTitle)
                 sounds.forEach { msg("&b${it.soundName}") }
-                msg("&b~ the end ~")
+                msg(Locale.cmdEnd)
             }
             "remake" -> {
                 require("remake")
@@ -121,27 +121,27 @@ fun Plugin.makeCommands() = command("sneaksound") { args ->
                 }
             }
             else -> {
-                msg("&b~ SneakSound ~")
+                msg(Locale.cmdTitle)
                 if (this is Player) {
                     if (config.sound.isNotEmpty())
-                        msg("&bSound: ${config.sound}")
+                        msg(Locale.statusSound(config.sound))
                     when (config.enabled) {
-                        true -> msg("&bStatus: &aenabled")
-                        false -> msg("&bStatus: &cdisabled")
+                        true -> msg(Locale.statusEnabled)
+                        false -> msg(Locale.statusDisabled)
                     }
                 }
                 if (has("about")) {
                     msg("&bAuthors: ${description.authors}")
                     msg("&bVersion: ${description.version}")
                 }
-                msg("&bCommands:")
-                if (has("list")) msg("&b- List sounds: /sneaksound list")
-                if (has("toggle")) msg("&b- Toggle sounds: /sneaksound toggle [player]")
-                if (has("send")) msg("&b- Send pack: /sneaksound send [player]")
-                if (has("set")) msg("&b- Set sound: /sneaksound set <sound> [player]")
-                if (has("unset")) msg("&b- Unset sound: /sneaksound unset [player]")
-                if (has("remake")) msg("&b- Remake the pack: /sneaksound remake")
-                msg("&b~ the end ~")
+                msg(Locale.cmdCommands)
+                if (has("list")) msg(Locale.cmdList)
+                if (has("toggle")) msg(Locale.cmdToggle)
+                if (has("send")) msg(Locale.cmdSend)
+                if (has("set")) msg(Locale.cmdSet)
+                if (has("unset")) msg(Locale.cmdUnset)
+                if (has("remake")) msg(Locale.cmdRemake)
+                msg(Locale.cmdEnd)
             }
         }
     }
